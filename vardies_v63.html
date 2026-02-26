@@ -1,0 +1,1032 @@
+<!doctype html>
+<html lang="el">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1"/>
+<title>Ημερολόγιο Βαρδιών</title>
+<style>
+:root{
+  --bg:#f2f4f8;
+  --card:#ffffff;
+  --border:#e4e7ee;
+  --text:#0f172a;
+  --muted:#64748b;
+
+  --pr:#0048ff;
+  --ap:#ff5a00;
+  --ny:#0b3d91;
+  --ad:#7dd3fc;
+  --rp:#dc2626;
+  --wk:#ff0033;
+
+  --accent:#00c2a8;
+  --net:#16a34a;
+}
+
+*{box-sizing:border-box}
+body{
+  margin:0;
+  font-family:system-ui,-apple-system,Segoe UI,Roboto,Arial;
+  background:var(--bg);
+  color:var(--text);
+  padding-bottom:170px; /* space for bottom bar */
+}
+header{
+  width:100%;
+  background:#0b1b3a;
+  color:white;
+  border-bottom:3px solid #000000;
+  padding:16px 14px;
+  position:sticky;
+  top:0;
+  z-index:10;
+  box-shadow:0 8px 24px rgba(0,0,0,.25);
+}
+.h1{font-weight:1100; text-align:center; font-size:20px; letter-spacing:.2px}
+.h2{margin-top:6px; text-align:center; font-size:13px; color:rgba(255,255,255,.85); font-weight:900; line-height:1.28}
+
+.wrap{max-width:980px; margin:0 auto; padding:12px}
+
+.controls{
+  display:flex; justify-content:center; align-items:center; gap:10px; flex-wrap:wrap;
+  margin:10px 0 6px;
+}
+.btnNav{
+  border:none; background:#eef2ff;
+  padding:10px 14px; border-radius:14px;
+  font-weight:1000; cursor:pointer;
+}
+.monthPill{
+  background:#0f172a; color:white;
+  padding:10px 14px; border-radius:14px;
+  font-weight:1000;
+}
+
+.card{
+  background:var(--card);
+  border:2px solid #000000;
+  border-radius:18px;
+  padding:12px;
+  box-shadow:0 6px 20px rgba(15,23,42,.06);
+}
+
+.dow{
+  display:grid; grid-template-columns:repeat(7,1fr);
+  gap:8px; margin-top:10px;
+}
+.dow div{
+  text-align:center; padding:10px 0; border-radius:12px;
+  background:#f8fafc; border:2px solid #000000;
+  font-weight:1000; color:#334155;
+}
+.dow .wk{background:#6b7280; border:2px solid #000000; color:#ffffff}
+
+.grid{
+  display:grid; grid-template-columns:repeat(7,1fr);
+  gap:8px; margin-top:8px;
+}
+.day{
+  background:white;
+  border:2px solid #000000;
+  border-radius:16px;
+  min-height:108px;
+  padding:8px;
+  cursor:pointer;
+  display:flex; flex-direction:column; justify-content:space-between;
+  transition:transform .05s ease;
+}
+.day:active{transform:translateY(1px)}
+.day.muted{opacity:.35}
+.day.weekend{background:#9ca3af; border:3px solid #000000;}
+.topRow{display:flex; justify-content:space-between; align-items:flex-start; gap:6px}
+.num{font-weight:1000; font-size:16px; display:flex; align-items:center}
+.wkBadge{
+  display:none;
+  font-size:11px; font-weight:1000;
+  padding:6px 8px; border-radius:999px;
+  background:#fff1f2; border:1px solid #fecdd3; color:#be123c;
+}
+.day.weekend .wkBadge{display:inline-flex}
+
+.noteDot{
+  width:10px; height:10px; border-radius:999px;
+  background:var(--accent);
+  display:none; margin-left:6px;
+  box-shadow:0 0 0 3px rgba(0,194,168,.18);
+}
+.day.hasNote .noteDot{display:inline-block}
+
+.shiftBadge{
+  width:fit-content;
+  padding:8px 10px;
+  border-radius:12px;
+  font-weight:1000;
+  font-size:13px;
+  color:white;
+}
+.shiftBadge.pr{background:var(--pr)}
+.shiftBadge.ap{background:var(--ap)}
+.shiftBadge.ny{background:var(--ny)}
+.shiftBadge.ad{background:var(--ad)}
+.shiftBadge.rp{background:var(--rp)}
+.shiftBadge.five{background:var(--wk)} /* 5ΜΕΡΑ */
+.shiftBadge.special{
+  background:#7f1d1d;
+  color:#ffffff;
+  border:2px solid #ff0000;
+  font-size:14px;
+  box-shadow:0 0 10px rgba(255,0,0,.6);
+}
+
+.small{font-size:12px; color:var(--muted); font-weight:800; line-height:1.35}
+
+.summaryRow{
+  display:grid; grid-template-columns:1fr 1fr;
+  gap:10px; margin-top:10px;
+}
+@media (max-width:700px){.summaryRow{grid-template-columns:1fr}}
+
+.big{
+  font-size:26px; font-weight:1000;
+}
+.netBox{
+  margin-top:10px;
+  background:#ecfdf5;
+  border:1px solid #bbf7d0;
+  border-radius:18px;
+  padding:12px;
+}
+.netValue{
+  font-size:34px;
+  font-weight:1100;
+  color:var(--net);
+}
+
+/* Bottom bar */
+.bottomWrap{
+  position:fixed; left:0; right:0; bottom:0;
+  padding:10px 12px calc(10px + env(safe-area-inset-bottom));
+  z-index:30;
+  background:linear-gradient(to top, rgba(242,244,248,.98), rgba(242,244,248,.70), rgba(242,244,248,0));
+}
+.bottomBar{
+  max-width:980px; margin:0 auto;
+  background:var(--card);
+  border:2px solid #000000;
+  border-radius:18px;
+  box-shadow:0 -10px 30px rgba(15,23,42,.10);
+  padding:10px;
+}
+.barTop{display:flex; justify-content:space-between; align-items:center; gap:10px}
+.barTitle{
+  font-family: "Segoe Script", "Brush Script MT", cursive;
+  font-size:20px;
+  font-weight:900;
+  color:#6b7280;
+  letter-spacing:1px;
+  text-align:center;
+  flex:1;
+}
+.barBtn{
+  width:52px;
+  height:44px;
+  border-radius:16px;
+  border:3px solid #000000;
+  background:#0b1b3a;
+  color:#ffffff;
+  font-size:20px;
+  font-weight:1100;
+  cursor:pointer;
+  box-shadow:0 6px 18px rgba(0,0,0,.35);
+}
+.shiftRow{
+  margin-top:10px;
+  display:flex; gap:10px; flex-wrap:wrap;
+}
+.shiftRow.hidden{display:none}
+.shiftRow button{
+  flex:1; min-width:80px; height:56px;
+  border:none; border-radius:14px;
+  font-weight:1100; font-size:18px; letter-spacing:.5px;
+  color:white; cursor:pointer;
+  box-shadow:0 6px 18px rgba(15,23,42,.18);
+}
+.shiftRow button:active{transform:scale(.97)}
+.shiftRow .pr{background:var(--pr)}
+.shiftRow .ap{background:var(--ap)}
+.shiftRow .ny{background:var(--ny)}
+.shiftRow .ad{background:var(--ad)}
+.shiftRow .rp{background:#dc2626}
+.activeHint{margin-top:8px; color:var(--muted); font-weight:900; font-size:12px}
+
+/* Notes modal (full width bottom sheet) */
+.modalBackdrop{
+  position:fixed; inset:0;
+  background:rgba(15,23,42,.35);
+  display:none; align-items:flex-end; justify-content:center;
+  z-index:50;
+}
+.modalBackdrop.show{display:flex}
+.modal{
+  width:100%;
+  max-width:980px;
+  background:var(--card);
+  border:2px solid #000000;
+  border-top-left-radius:18px;
+  border-top-right-radius:18px;
+  padding:12px;
+  box-shadow:0 -18px 60px rgba(15,23,42,.25);
+}
+.modalHeader{display:flex; justify-content:space-between; align-items:center; gap:10px}
+.modalTitle{font-weight:1100}
+.modalClose{border:none; background:#f1f5f9; border:2px solid #000000; border-radius:12px; padding:10px 12px; font-weight:1000; cursor:pointer}
+textarea{
+  width:100%;
+  min-height:140px;
+  margin-top:10px;
+  border:2px solid #000000;
+  border-radius:14px;
+  padding:12px;
+  font-weight:800;
+  font-family:inherit;
+  resize:vertical;
+}
+.modalActions{display:flex; gap:10px; justify-content:flex-end; flex-wrap:wrap; margin-top:10px}
+.btn{
+  border:none; border-radius:14px; padding:12px 14px;
+  font-weight:1100; cursor:pointer;
+}
+.btnSave{background:#0f172a; color:white}
+.btnDanger{background:#ef4444; color:white}
+
+/* Full-width layout (prevents empty right space when zoomed out) */
+.wrap{max-width:100%; margin:0; padding:12px}
+.card{width:100%}
+.bottomBar{max-width:100%}
+header{width:100vw}
+
+
+.barBtn{
+  transition:transform .25s ease;
+}
+.barBtn.rotate{
+  transform:rotate(180deg);
+}
+
+
+.signature{
+  font-family:"Brush Script MT","Segoe Script",cursive;
+  font-size:14px;
+  color:#6b7280;
+  margin-top:2px;
+  display:inline-block;
+  border-bottom:1px solid #6b7280;
+  padding-bottom:2px;
+  letter-spacing:.5px;
+}
+
+
+
+
+
+
+
+/* FORCE SINGLE PAGE - SHOW ONLY MAIN REPORT */
+@media print{
+
+  @page { size: A4; margin: 10mm; }
+
+  body * {
+    visibility: hidden !important;
+  }
+
+  /* show only main wrapper */
+  .wrap, .wrap * {
+    visibility: visible !important;
+  }
+
+  /* hide header top info text */
+  header,
+  .bottomWrap,
+  .controls,
+  .activeHint,
+  .instructionsCard,
+  #pdfBtn,
+  .shiftRow {
+    display: none !important;
+  }
+
+  body{
+    background:#ffffff !important;
+    font-size:18px !important;
+  }
+
+  .big{
+    font-size:50px !important;
+    font-weight:1100 !important;
+  }
+
+  .netBox{
+    font-size:22px !important;
+  }
+
+  #calendar{
+    page-break-inside: avoid !important;
+  }
+
+  .wrap{
+    margin:0 auto !important;
+    padding:0 !important;
+  }
+}
+
+
+@media print{
+  html, body{
+    height:297mm !important;
+    overflow:hidden !important;
+  }
+  .wrap{
+    max-height:277mm !important;
+    overflow:hidden !important;
+  }
+  /* avoid implicit breaks */
+  *{
+    break-after: avoid-page !important;
+    break-before: avoid-page !important;
+  }
+}
+
+
+/* Full-cell backgrounds for shifts (requested) */
+.day{position:relative;}
+.day.shiftPR{background:var(--pr) !important; color:#fff !important;}
+.day.shiftAP{background:var(--ap) !important; color:#fff !important;}
+.day.shiftNY{background:var(--ny) !important; color:#fff !important;}
+.day.shiftAD{background:var(--ad) !important; color:#fff !important;}
+.day.shiftRP{background:var(--rp) !important; color:#fff !important;}
+.day.fiveBG{background:var(--wk) !important; color:#fff !important;}
+
+.day.shiftPR .dayNum, .day.shiftAP .dayNum, .day.shiftNY .dayNum, .day.shiftAD .dayNum, .day.shiftRP .dayNum, .day.fiveBG .dayNum{color:#fff !important;}
+.day.shiftPR .wkTag, .day.shiftAP .wkTag, .day.shiftNY .wkTag, .day.shiftAD .wkTag, .day.shiftRP .wkTag, .day.fiveBG .wkTag{border-color:rgba(255,255,255,.55)!important; color:#fff!important; background:rgba(0,0,0,.18)!important;}
+.day.shiftPR .dash, .day.shiftAP .dash, .day.shiftNY .dash, .day.shiftAD .dash, .day.shiftRP .dash, .day.fiveBG .dash{color:rgba(255,255,255,.85)!important;}
+.day.shiftPR .badge, .day.shiftAP .badge, .day.shiftNY .badge, .day.shiftAD .badge, .day.shiftRP .badge, .day.fiveBG .badge{background:rgba(255,255,255,.15)!important; border-color:rgba(255,255,255,.35)!important; color:#fff!important; font-weight:1200!important;}
+.day.shiftPR .mini, .day.shiftAP .mini, .day.shiftNY .mini, .day.shiftAD .mini, .day.shiftRP .mini, .day.fiveBG .mini{color:#fff!important; opacity:.95;}
+
+
+/* Print: keep colors and prevent clipping */
+@media print{
+  *{
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+  }
+  body{
+    background:#fff !important;
+  }
+  /* Slightly reduce scale to ensure nothing is cut */
+  .wrap{
+    transform: scale(0.98);
+    transform-origin: top center;
+    padding-bottom: 12mm !important;
+  }
+  .netBox{
+    page-break-inside: avoid !important;
+    margin-top: 6mm !important;
+    padding-bottom: 4mm !important;
+  }
+  .netBox .big{
+    font-size: 46px !important;
+    line-height: 1.05 !important;
+  }
+  /* Ensure day backgrounds are printed */
+  .day.shiftPR, .day.shiftAP, .day.shiftNY, .day.shiftAD, .day.shiftRP, .day.fiveBG{
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+  }
+}
+
+
+@media print{
+  .netValue{
+    display:block !important;
+    visibility:visible !important;
+    color:#0a7a2f !important; /* darker green for print */
+    font-size:44px !important;
+    font-weight:1200 !important;
+    line-height:1.05 !important;
+  }
+}
+
+
+/* PRINT FIX – make everything fit one page and show net clearly */
+@media print{
+
+  *{
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+  }
+
+  body{
+    background:#ffffff !important;
+  }
+
+  /* Shrink calendar slightly so summary always fits */
+  .calendar{
+    transform: scale(0.92);
+    transform-origin: top center;
+  }
+
+  /* Move summary upward and ensure visibility */
+  .summary, .netBox{
+    margin-top: 4mm !important;
+    page-break-inside: avoid !important;
+  }
+
+  /* Make net amount very clear */
+  #net, .netValue{
+    display:block !important;
+    visibility:visible !important;
+    font-size: 48px !important;
+    font-weight: 1200 !important;
+    color:#0a7a2f !important;
+    line-height:1.05 !important;
+  }
+
+}
+
+
+/* STRICT A4 ONE-PAGE PRINT LAYOUT */
+@media print{
+
+  @page{
+    size: A4 portrait;
+    margin: 10mm;
+  }
+
+  *{
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+  }
+
+  body{
+    background:#ffffff !important;
+  }
+
+  /* Force everything to fit one page */
+  .wrap{
+    zoom: 0.88;
+  }
+
+  /* Make sure summary & net always visible */
+  .summary, .netBox{
+    page-break-inside: avoid !important;
+    margin-top: 6mm !important;
+  }
+
+  #net, .netValue{
+    font-size: 44px !important;
+    font-weight: 1200 !important;
+    color:#0a7a2f !important;
+    line-height:1.05 !important;
+  }
+
+}
+
+
+/* Net box inline layout */
+.netBox{
+  display:flex !important;
+  align-items:center !important;
+  justify-content:space-between !important;
+  gap:12px;
+}
+
+.netBox .netLabel{
+  font-weight:600;
+}
+
+.netBox #net, 
+.netBox .netValue{
+  font-size:42px !important;
+  font-weight:1200 !important;
+  margin:0 !important;
+}
+
+</style>
+</head>
+<body>
+
+<header>
+  <div class="h1" style="text-align:center; font-size:22px; font-weight:1100;">
+    Ημερολόγιο Βαρδιών
+  </div>
+  <div class="h2" style="text-align:center; font-size:14px; font-weight:900; margin-top:6px;">
+    Υπολογισμός Νυχτερινών - Πενθήμερων.
+  </div>
+</header>
+
+<div class="wrap">
+  <div class="controls">
+    <button class="btnNav" id="prevBtn">◀</button>
+    <span class="monthPill" id="monthLabel">—</span>
+    <button class="btnNav" id="nextBtn">▶</button>
+    <button class="btnNav" id="pdfBtn">🧾 PDF</button>
+  </div>
+
+  <div class="card">
+    <div class="small">
+      Διάλεξε βάρδια από κάτω και πάτα ημερομηνία για καταχώρηση. Ξαναπάτα για διαγραφή.
+      Πάτα ημερομηνία χωρίς ενεργή βάρδια για σημείωση.
+    </div>
+
+    <div class="dow" aria-hidden="true">
+      <div>Δε</div><div>Τρ</div><div>Τε</div><div>Πε</div><div>Πα</div><div class="wk">Σα</div><div class="wk">Κυ</div>
+    </div>
+    <div class="grid" id="calendar"></div>
+  </div>
+
+  <div class="summaryRow">
+    <div class="card">
+      <div class="small">🌙 Νύχτες</div>
+      <div class="big" id="nights">0</div><div class="small" id="nightDates" style="margin-top:6px;color:#111827"></div>
+    </div>
+    <div class="card">
+      <div class="small">📅 5Μ</div>
+      <div class="big" id="fives">0</div><div class="small" id="fiveDates" style="margin-top:6px;color:#111827"></div>
+    </div>
+  </div>
+
+  <div class="netBox">
+    <div class="small">✅ <span class="netLabel">Καθαρό ποσό (extra)</span></div>
+    <div class="netValue" id="net">0,00€</div>
+    <div class="small" style="margin-top:6px">
+      Μικτό: <b id="gross">0,00€</b><br>ΜΤΠΥ 2%: <b id="mtpy">0,00€</b> • Υπέρ ανεργίας 2%: <b id="unemp">0,00€</b><br>Φόρος 20%: <b id="tax20">0,00€</b> • <b>Σύνολο 24%</b>: <b id="tax">0,00€</b>
+    </div>
+  </div>
+
+
+  </div>
+
+
+  <div class="card" style="margin-top:14px; border:2px solid #000;">
+    <div style="font-weight:1100; margin-bottom:8px;">Οδηγίες Χρήσης</div>
+    <div class="small" style="color:#111827;">
+      • Επιλέγεις βάρδια από κάτω και πατάς ημέρα για καταχώρηση.<br>
+      • Ξαναπατάς την ίδια ημέρα για διαγραφή.<br>
+      • Παρασκευή ΝΥ (22:00–06:00) υπολογίζεται ως 5Μ.<br>
+      • Σάββατο ΝΥ (22:00–06:00) υπολογίζεται μόνο 1 5Μ.<br>
+      • Τα 5Μ υπολογίζονται για κάθε Σάββατο & Κυριακή με υπηρεσία.<br>
+      • Οι Νυχτερινές πληρώνονται 24,5€ (εκτός Παρασκευής & Σαββάτου ΝΥ).<br>
+      • Φορολόγηση 24% στο σύνολο.
+    </div>
+  </div>
+
+</div>
+
+<!-- Bottom bar -->
+<div class="bottomWrap">
+  <div class="bottomBar">
+    <div class="barTop">
+      <div style="flex:1; text-align:center;">
+        <div class="barTitle">Βάρδιες</div>
+        <div class="signature">Κερμανίδης Μερκούριος</div>
+      </div>
+      <button class="barBtn" id="barToggle">▾</button>
+    </div>
+    <div class="shiftRow hidden" id="shiftRow">
+      <button class="pr" data-shift="PR">ΠΡ</button>
+      <button class="ap" data-shift="AP">ΑΠ</button>
+      <button class="ny" data-shift="NY">ΝΥ</button>
+      <button class="ad" data-shift="AD">ΑΔ</button>
+      <button class="rp" data-shift="RP">Ρ</button>
+    </div>
+    <div class="activeHint">
+      Ενεργή βάρδια: <b id="activeLabel">—</b>
+    </div>
+  </div>
+</div>
+
+<!-- Notes Modal -->
+<div class="modalBackdrop" id="modal">
+  <div class="modal">
+    <div class="modalHeader">
+      <div class="modalTitle" id="modalTitle">Σημείωση</div>
+      <button class="modalClose" id="modalClose">Κλείσιμο</button>
+    </div>
+    <textarea id="noteText" placeholder="Γράψε σημείωση για την ημέρα..."></textarea>
+    <div class="modalActions">
+      <button class="btn btnDanger" id="noteDelete">Διαγραφή</button>
+      <button class="btn btnSave" id="noteSave">Αποθήκευση</button>
+    </div>
+  </div>
+</div>
+
+<script>
+(() => {
+  const NIGHT_RATE = 24.5;
+  const FIVE_RATE  = 46;
+  const TAX_RATE   = 0.24;
+
+  const el = (id) => document.getElementById(id);
+
+  let view = new Date();
+  view.setDate(1);
+
+  let activeShift = null;
+  let selectedKey = null;
+
+  // --- Date helpers (local-safe, no ISO timezone bugs)
+  const keyOf = (d) => {
+    const y=d.getFullYear();
+    const m=String(d.getMonth()+1).padStart(2,"0");
+    const day=String(d.getDate()).padStart(2,"0");
+    return `${y}-${m}-${day}`;
+  };
+  const parseKey = (k) => { const [yy,mm,dd]=k.split("-").map(Number); return new Date(yy,(mm||1)-1,dd||1); };
+  const isWeekend = (d) => d.getDay()===6 || d.getDay()===0; // Sat=6 Sun=0
+  const addDaysKey = (k, n) => {
+    const d = parseKey(k);
+    d.setDate(d.getDate()+n);
+    return keyOf(d);
+  };
+
+  const storeKey = (y,m) => "vardies_v63:"+y+"-"+String(m+1).padStart(2,"0");
+
+  const loadMonth = (y,m) => {
+    const raw = localStorage.getItem(storeKey(y,m));
+    if(!raw) return {days:{}, notes:{}};
+    try{
+      const p = JSON.parse(raw);
+      if(p && !p.days && !p.notes){ // old format fallback
+        return {days:p, notes:{}};
+      }
+      return {days: p.days||{}, notes: p.notes||{}};
+    }catch{
+      return {days:{}, notes:{}};
+    }
+  };
+  const saveMonth = (y,m,data) => localStorage.setItem(storeKey(y,m), JSON.stringify(data));
+
+  const labelMonth = () => el("monthLabel").textContent = view.toLocaleString("el-GR",{month:"long",year:"numeric"});
+
+  // --- Rules
+  function isNightPaid(dayKey, type){
+    if(type !== "NY") return false;
+    const dow = parseKey(dayKey).getDay(); // 5 Fri, 6 Sat
+    if(dow === 5 || dow === 6) return false; // Fri/Sat night -> NOT paid as night
+    return true;
+  }
+
+  // returns set of weekend day keys that should count as 5-day pay for this entry
+  function fiveDaysForEntry(dayKey, type){
+    const res = new Set();
+    if(!type || type==="AD" || type==="RP") return res;
+
+    const d = parseKey(dayKey);
+    const dow = d.getDay();
+
+    // If the service is on a weekend day, that day counts (Sat/Sun)
+    if(dow === 6 || dow === 0){
+      // Special: Saturday NY is only Saturday (still Saturday key)
+      res.add(dayKey);
+      return res;
+    }
+
+    // Special: Friday night (NY) counts as Saturday 5-day
+    if(dow === 5 && type === "NY"){
+      res.add(addDaysKey(dayKey, 1)); // Saturday
+    }
+    return res;
+  }
+
+  function shiftBadge(type, dayKey){
+    // Show 5ΜΕΡΑ badge when this dayKey is counted as 5-day in the month calc (we pass in computed set)
+    // But for display, if it's weekend with any work, show its type badge. We'll also add a small "5ΜΕΡΑ" when counted.
+    const map = {PR:["ΠΡ","pr"], AP:["ΑΠ","ap"], NY:["ΝΥ","ny"], AD:["ΑΔ","ad"], RP:["Ρ","rp"]};
+    return map[type] || ["—",""];
+  }
+
+  function fmtEUR(x){
+    return x.toLocaleString("el-GR",{minimumFractionDigits:2,maximumFractionDigits:2})+"€";
+  }
+
+  function calcAndRenderSummary(monthData, y, m){
+    const days = monthData.days || {};
+    let nights = 0;
+    const nightKeys = [];
+    const fiveSet = new Set();
+
+    for(const k of Object.keys(days)){
+      const d = parseKey(k);
+      if(d.getFullYear()!==y || d.getMonth()!==m) continue;
+      const type = days[k]?.type || days[k]; // tolerate old
+      if(isNightPaid(k, type)){
+        nights++;
+        nightKeys.push(k);
+      }
+      const f = fiveDaysForEntry(k, type);
+      f.forEach(x => {
+        const dx = parseKey(x);
+        // Count only weekend dates that belong to the viewed month
+        if(dx.getFullYear()===y && dx.getMonth()===m) fiveSet.add(x);
+      });
+    }
+
+    const five = fiveSet.size;
+    const gross = nights*NIGHT_RATE + five*FIVE_RATE;
+    const mtpy = gross * 0.02;
+    const unemp = gross * 0.02;
+    const tax20 = gross * 0.20;
+    const tax = mtpy + unemp + tax20; // 24%
+    const net = gross - tax;
+
+    el("nights").textContent = nights;
+    el("fives").textContent = five;
+    el("gross").textContent = fmtEUR(gross);
+    const mt=document.getElementById("mtpy"); if(mt) mt.textContent = fmtEUR(mtpy);
+    const ue=document.getElementById("unemp"); if(ue) ue.textContent = fmtEUR(unemp);
+    const t20=document.getElementById("tax20"); if(t20) t20.textContent = fmtEUR(tax20);
+    el("tax").textContent = fmtEUR(tax);
+    el("net").textContent = fmtEUR(net);
+
+    // Render date lists in parentheses (dd/mm + ΣΑ/ΚΥ)
+    const nightEl = document.getElementById("nightDates");
+    const fiveEl  = document.getElementById("fiveDates");
+
+    const fmtShort = (k) => {
+      const d = parseKey(k);
+      const dd = String(d.getDate()).padStart(2,"0");
+      const mm = String(d.getMonth()+1).padStart(2,"0");
+      return dd + "/" + mm;
+    };
+    const dowTag = (k) => {
+      const g = parseKey(k).getDay();
+      if(g===6) return "ΣΑ";
+      if(g===0) return "ΚΥ";
+      return "";
+    };
+
+    if(nightEl){
+      const list = nightKeys.sort().map(k => fmtShort(k));
+      nightEl.textContent = list.length ? "(" + list.join(", ") + ")" : "";
+    }
+    if(fiveEl){
+      const list = Array.from(fiveSet).sort().map(k => {
+        const tag = dowTag(k);
+        return tag ? (fmtShort(k) + " " + tag) : fmtShort(k);
+      });
+      fiveEl.textContent = list.length ? "(" + list.join(", ") + ")" : "";
+    }
+
+    return fiveSet;
+  }
+
+  function render(){
+    const cal = el("calendar");
+    cal.innerHTML = "";
+
+    const y=view.getFullYear();
+    const m=view.getMonth();
+    labelMonth();
+
+    const monthData = loadMonth(y,m);
+    const fiveSet = calcAndRenderSummary(monthData, y, m);
+    const notes = monthData.notes || {};
+
+    // Render notes list
+    const notesListEl = document.getElementById("notesList");
+    if(notesListEl){
+      notesListEl.innerHTML = "";
+      Object.keys(notes)
+        .filter(k => notes[k] && notes[k].trim() !== "")
+        .sort()
+        .forEach(k => {
+          const d = parseKey(k);
+          const div = document.createElement("div");
+          div.style.marginBottom = "6px";
+          div.textContent = d.toLocaleDateString("el-GR") + " - " + notes[k];
+          notesListEl.appendChild(div);
+        });
+      if(notesListEl.innerHTML === ""){
+        notesListEl.innerHTML = "<span style='color:#64748b'>Δεν υπάρχουν σημειώσεις.</span>";
+      }
+    }
+    const days = monthData.days || {};
+
+    const first=new Date(y,m,1);
+    const weekday = (first.getDay()===0) ? 7 : first.getDay(); // Mon=1..Sun=7
+    const start=new Date(first);
+    start.setDate(first.getDate()-(weekday-1));
+
+    for(let i=0;i<42;i++){
+      const d=new Date(start);
+      d.setDate(start.getDate()+i);
+      const k=keyOf(d);
+      const inMonth = d.getMonth()===m;
+
+      const type = days[k]?.type || days[k] || "";
+      const hasNote = !!(notes[k] && String(notes[k]).trim().length>0);
+
+      const cell=document.createElement("div");
+      cell.className="day";
+      if(!inMonth) cell.classList.add("muted");
+      if(isWeekend(d)) cell.classList.add("weekend");
+      if(hasNote) cell.classList.add("hasNote");
+
+      const wkText = d.getDay()===6 ? "ΣΑ" : (d.getDay()===0 ? "ΚΥ" : "");
+
+      const [txt, cls] = shiftBadge(type, k);
+      const showShift = !!type;
+      const showFive = fiveSet.has(k); // this exact day is paid as 5-day (Sat/Sun)
+      const isFridayNight = (type==="NY" && parseKey(k).getDay()===5);
+      
+      // Full-cell background coloring
+      if(isFridayNight){
+        // Παρασκευή νύχτα: μετράει ως 5Μ αλλά οπτικά μένει ΝΥ (όχι κόκκινο)
+        cell.classList.add("shiftNY");
+      }else{
+        if(type==="PR") cell.classList.add("shiftPR");
+        else if(type==="AP") cell.classList.add("shiftAP");
+        else if(type==="NY") cell.classList.add("shiftNY");
+        else if(type==="AD") cell.classList.add("shiftAD");
+        else if(type==="RP") cell.classList.add("shiftRP");
+        if(showFive) cell.classList.add("fiveBG");
+      }
+
+
+      cell.innerHTML = `
+        <div class="topRow">
+          <div class="num">${d.getDate()}<span class="noteDot" title="Υπάρχει σημείωση"></span></div>
+          <div class="wkBadge">${wkText}</div>
+        </div>
+        <div style="display:flex; gap:8px; flex-wrap:wrap; justify-content:flex-start; align-items:center">
+          ${showShift ? `<div class="shiftBadge ${cls}">${txt}</div>` : `<div class="small">—</div>`}
+          ${showFive ? `<div class="shiftBadge five">5Μ</div>` : ``}
+          ${isFridayNight ? `<div class="shiftBadge special">Πα ΝΥ → 5Μ</div>` : ``}
+        </div>
+      `;
+
+      cell.addEventListener("click", () => {
+        selectedKey = k;
+        // If shift bar is closed, allow notes
+        const barClosed = document.getElementById("shiftRow").classList.contains("hidden");
+        if(activeShift && !barClosed){
+          // toggle shift on/off
+          if((days[k]?.type || days[k]) === activeShift){
+            delete monthData.days[k];
+          } else {
+            monthData.days[k] = {type: activeShift};
+          }
+          saveMonth(y,m,monthData);
+          render();
+        } else {
+          openNote(k, monthData);
+        }
+      });
+
+      cal.appendChild(cell);
+    }
+  }
+
+  // Bottom bar logic
+  function setActiveLabel(){
+    const map = {PR:"ΠΡ", AP:"ΑΠ", NY:"ΝΥ", AD:"ΑΔ", RP:"Ρ"};
+    el("activeLabel").textContent = activeShift ? (map[activeShift]||activeShift) : "—";
+  }
+
+  const shiftRow = el("shiftRow");
+  const barToggle = el("barToggle");
+  const setBarOpen = (open) => {
+    if(open){ shiftRow.classList.remove("hidden"); barToggle.textContent="▴"; }
+    else { shiftRow.classList.add("hidden"); barToggle.textContent="▾"; }
+    try{ localStorage.setItem("vardies_bar_open_v23", open?"1":"0"); }catch(e){}
+  };
+  let barOpen = false;
+  try{ barOpen = localStorage.getItem("vardies_bar_open_v23")==="1"; }catch(e){}
+  setBarOpen(barOpen);
+  barToggle.addEventListener("click", () => {
+    const willOpen = shiftRow.classList.contains("hidden");
+    setBarOpen(willOpen);
+    barToggle.classList.toggle("rotate", willOpen);
+  });
+
+  document.querySelectorAll("[data-shift]").forEach(btn => {
+    btn.addEventListener("click", () => {
+      const s = btn.getAttribute("data-shift");
+      activeShift = (activeShift === s) ? null : s; // tap again -> off
+      document.querySelectorAll("[data-shift]").forEach(b => b.style.boxShadow="0 6px 18px rgba(15,23,42,.18)");
+      // If shift bar is closed, allow notes
+        const barClosed = document.getElementById("shiftRow").classList.contains("hidden");
+        if(activeShift && !barClosed){
+        btn.style.boxShadow="0 0 0 3px rgba(0,194,168,.85), 0 10px 22px rgba(0,194,168,.22)";
+      }
+      setActiveLabel();
+    });
+  });
+  setActiveLabel();
+
+  // Notes modal
+  const modal = el("modal");
+  const noteText = el("noteText");
+  const modalTitle = el("modalTitle");
+
+  function openNote(k, monthData){
+    const d = parseKey(k);
+    modalTitle.textContent = d.toLocaleDateString("el-GR",{weekday:"long", year:"numeric", month:"long", day:"numeric"});
+    noteText.value = (monthData.notes && monthData.notes[k]) ? monthData.notes[k] : "";
+    modal.classList.add("show");
+  }
+  function closeNote(){ modal.classList.remove("show"); }
+
+  el("modalClose").addEventListener("click", closeNote);
+  modal.addEventListener("click", (e) => { if(e.target === modal) closeNote(); });
+
+  el("noteSave").addEventListener("click", () => {
+    if(!selectedKey) return;
+    const y=view.getFullYear(), m=view.getMonth();
+    const monthData = loadMonth(y,m);
+    monthData.notes[selectedKey] = noteText.value || "";
+    saveMonth(y,m,monthData);
+    closeNote();
+    render();
+  });
+
+  el("noteDelete").addEventListener("click", () => {
+    if(!selectedKey) return;
+    const y=view.getFullYear(), m=view.getMonth();
+    const monthData = loadMonth(y,m);
+    monthData.notes[selectedKey] = "";
+    saveMonth(y,m,monthData);
+    noteText.value = "";
+    closeNote();
+    render();
+  });
+
+  // Month nav
+  el("prevBtn").addEventListener("click", () => { view.setMonth(view.getMonth()-1); view.setDate(1); render(); });
+  el("nextBtn").addEventListener("click", () => { view.setMonth(view.getMonth()+1); view.setDate(1); render(); });
+
+
+  const pdfBtn = document.getElementById("pdfBtn");
+  if(pdfBtn){
+    pdfBtn.addEventListener("click", () => {
+      // Close shifts bar for clean PDF
+      try{
+        const sr = document.getElementById("shiftRow");
+        if(sr && !sr.classList.contains("hidden")){
+          sr.classList.add("hidden");
+          const bt = document.getElementById("barToggle");
+          if(bt){ bt.textContent = "▾"; bt.classList.remove("rotate"); }
+        }
+      }catch(e){}
+      window.print();
+    });
+  }
+
+  render();
+})();
+</script>
+
+
+<script>
+function openCleanPDF(){
+  const nights = document.getElementById("nightCount").innerText;
+  const five = document.getElementById("fiveCount").innerText;
+  const gross = document.getElementById("grossAmount").innerText;
+  const tax = document.getElementById("taxAmount").innerText;
+  const net = document.getElementById("netAmount").innerText;
+  const cal = document.getElementById("calendar").innerHTML;
+
+  const w = window.open("", "_blank");
+  w.document.write(`
+  <html>
+  <head>
+  <title>Αναφορά Μήνα</title>
+  <style>
+  body{font-family:Arial;padding:20px;}
+  h1{text-align:center;margin-bottom:20px;}
+  table{width:100%;border-collapse:collapse;margin-top:10px;}
+  td,th{border:1px solid #000;padding:6px;text-align:center;}
+  .big{font-size:22px;font-weight:bold;}
+  </style>
+  </head>
+  <body>
+  <h1>Ημερολόγιο Βαρδιών - Αναφορά Μήνα</h1>
+  <div class="big">Νύχτες: ${nights}</div>
+  <div class="big">5Μ: ${five}</div>
+  <div class="big">Μικτό: ${gross} €</div>
+  <div class="big">Φόρος 24%: ${tax} €</div>
+  <div class="big">Καθαρό: ${net} €</div>
+  <hr>
+  <table>${cal}</table>
+  </body>
+  </html>
+  `);
+  w.document.close();
+  w.focus();
+  w.print();
+}
+</script>
+<button onclick="openCleanPDF()" style="position:fixed;bottom:20px;right:20px;padding:10px 15px;font-size:16px;">🧾 PDF</button>
+</body>
+</html>
